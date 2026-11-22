@@ -88,6 +88,25 @@ jobs:
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           actionlint
 
+  mcp-checks:
+    name: Local MCP checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install locked MCP dependencies and test synthetic data
+        working-directory: mcp
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=high
+          npm test
+
   deploy:
     name: Deploy production
     needs: [checks, plan]

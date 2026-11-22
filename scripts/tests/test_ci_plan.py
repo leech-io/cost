@@ -19,6 +19,7 @@ TARGETS = ()
 RUNTIME_PATH = 'backend/cmd/api/main.go'
 TEST_PATH = 'backend/internal/api/testdata/synthetic.txt'
 CHECK_ONLY = ['backend/internal/api/api_test.go', TEST_PATH, 'miniprogram/tests/login.test.js',
+              'mcp/src/index.mjs', 'mcp/package-lock.json', 'mcp/README.md', 'mcp/tests/stdio.test.mjs',
               'docs/ops/check.md', 'README.MD', 'scripts/tests/test_ci_plan.py',
               'scripts/plan-ci.py', '.github/workflows/ci-cd.yml']
 RUNTIME = {RUNTIME_PATH: [], 'backend/go.mod': [],
@@ -78,6 +79,7 @@ class CIPlanBehaviorTests(unittest.TestCase):
                 first = commit(RUNTIME_PATH, 'production v1')
                 commit(TEST_PATH, 'synthetic contact')
                 docs = commit('docs/check-only.md', 'public docs')
+                commit('mcp/src/index.mjs', 'local adapter v1')
                 for target in TARGETS or [None]:
                     self.assertFalse(self.call_plan(module, 'push', first, target=target)['deployment_required'])
                 self.assertFalse(self.call_plan(module, 'push', '0' * 40)['deployment_required'])

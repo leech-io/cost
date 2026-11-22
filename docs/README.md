@@ -20,6 +20,8 @@
 
 ## 接口
 
+- [2026-11-22：Cost 本机 MCP 工具契约](api/2026-11-22-readonly-mcp-api.md)
+
 - [2026-10-22：微信登录与家庭 API](api/2026-10-22-wechat-auth-and-family-api.md)
 - [2026-11-03：微信登录昵称 API](api/2026-11-03-wechat-nickname-api.md)
 - [2026-11-03：微信登录昵称记录设计](superpowers/specs/2026-11-03-wechat-nickname-design.md)
@@ -31,6 +33,8 @@
 - [2026-11-03：账本编辑验证记录](ops/2026-11-03-ledger-profile-validation.md)
 
 ## 运行与验证
+
+- [2026-11-22：Cost MCP 验证与接入状态](ops/2026-11-22-readonly-mcp-validation.md)
 
 - [仅测试与文档变更不部署：设计（补录）](superpowers/specs/2026-11-17-check-only-ci-design.md)
 - [仅测试与文档变更不部署：实施记录（补录）](superpowers/plans/2026-11-17-check-only-ci.md)
@@ -81,6 +85,9 @@
 - [2026-10-22：统一仓库与登录改造验证记录](ops/2026-10-22-monorepo-wechat-auth-validation.md)
 
 ## Superpowers
+
+- [2026-11-22：只读 MCP 设计（已确认）](superpowers/specs/2026-11-22-readonly-mcp-design.md)
+- [2026-11-22：只读 MCP 实施计划](superpowers/plans/2026-11-22-readonly-mcp.md)
 
 - [2026-10-22：开发流程规范](superpowers/2026-10-22-development-workflow.md)
 - [2026-10-27：环境与开发发布规范](superpowers/2026-10-27-environment-development-workflow.md)
