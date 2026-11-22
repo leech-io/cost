@@ -10,7 +10,7 @@ import subprocess
 
 def requires_deployment(path):
     parts = PurePosixPath(path).parts
-    if path.startswith(('docs/', '.idea/', '.qoder/', '.run/', 'scripts/tests/')):
+    if path.startswith(('docs/', '.idea/', '.qoder/', '.run/', 'scripts/tests/', 'mcp/')):
         return False
     if parts[-1].lower() in ('readme.md', 'agents.md', 'claude.md', '.gitignore'):
         return False
