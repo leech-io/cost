@@ -18,6 +18,17 @@ func TestLoadConfig(t *testing.T) {
 		"WECHAT_APP_ID":     "wx-app",
 		"WECHAT_APP_SECRET": "wx-secret",
 	}
+	prod := func(extra map[string]string) map[string]string {
+		env := make(map[string]string, len(production)+len(extra))
+		for k, v := range production {
+			env[k] = v
+		}
+		for k, v := range extra {
+			env[k] = v
+		}
+		return env
+	}
+	sha := strings.Repeat("ab", 32)
 	tests := []struct {
 		name      string
 		env       map[string]string
@@ -26,6 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		wantStore string
 		wantAuth  string
 		wantAddr  string
+		wantKey   bool
 	}{
 		{
 			name:      "local defaults are usable",
@@ -99,6 +111,29 @@ func TestLoadConfig(t *testing.T) {
 			wantAuth:  "wechat",
 			wantAddr:  "0.0.0.0:8080",
 		},
+		{
+			name:      "read-only key alongside wechat",
+			env:       prod(map[string]string{"COST_APIKEY_SHA256": sha}),
+			wantStore: "mysql",
+			wantAuth:  "wechat",
+			wantAddr:  "0.0.0.0:8080",
+			wantKey:   true,
+		},
+		{
+			name:    "read-only key must be a sha256 digest",
+			env:     prod(map[string]string{"COST_APIKEY_SHA256": "deadbeef"}),
+			wantErr: "COST_APIKEY_SHA256",
+		},
+		{
+			name:    "read-only key requires wechat mode",
+			env:     map[string]string{"COST_AUTH_MODE": "development", "COST_APIKEY_SHA256": sha},
+			wantErr: "requires COST_AUTH_MODE=wechat",
+		},
+		{
+			name:    "read-only key user id must be positive",
+			env:     prod(map[string]string{"COST_APIKEY_SHA256": sha, "COST_APIKEY_USER_ID": "0"}),
+			wantErr: "COST_APIKEY_USER_ID",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -115,8 +150,8 @@ func TestLoadConfig(t *testing.T) {
 			if err != nil {
 				t.Fatalf("loadConfig() unexpected error: %v", err)
 			}
-			if cfg.store != tt.wantStore || cfg.authMode != tt.wantAuth || cfg.addr != tt.wantAddr {
-				t.Fatalf("loadConfig() = %+v, want store=%q auth=%q addr=%q", cfg, tt.wantStore, tt.wantAuth, tt.wantAddr)
+			if cfg.store != tt.wantStore || cfg.authMode != tt.wantAuth || cfg.addr != tt.wantAddr || (cfg.apiKeySHA256 != "") != tt.wantKey {
+				t.Fatalf("loadConfig() = %+v, want store=%q auth=%q addr=%q key=%v", cfg, tt.wantStore, tt.wantAuth, tt.wantAddr, tt.wantKey)
 			}
 		})
 	}

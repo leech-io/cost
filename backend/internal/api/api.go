@@ -19,6 +19,8 @@ import (
 type API struct {
 	store      store.Store
 	token      string
+	keyHash    []byte
+	keyUser    int64
 	cache      ReferenceCache
 	generation referenceGeneration
 }
@@ -86,28 +88,43 @@ func newHandler(s store.Store, token string, service *auth.Service, opts ...Opti
 		if r.URL.Path != "/health" && !(service != nil && auth.PublicAvatarRequest(r)) {
 			if service != nil {
 				if r.URL.Path != "/api/v1/auth/wechat" {
-					p, err := service.Authenticate(r)
-					if err != nil {
-						status, code := 401, "unauthorized"
-						if !errors.Is(err, auth.ErrUnauthorized) {
-							status, code = 503, "authentication_unavailable"
+					if p, ok := a.keyPrincipal(r); ok {
+						if r.Method != http.MethodGet && r.Method != http.MethodHead {
+							respond(w, 403, map[string]string{"error": "read_only_key"})
+							return
 						}
-						respond(w, status, map[string]string{"error": code})
-						return
+						ledgerID, err := a.store.LedgerForUser(r.Context(), p.ID)
+						if err != nil {
+							slog.Error("ledger resolve", "error", err)
+							respond(w, 500, map[string]string{"error": "internal_error"})
+							return
+						}
+						ctx := auth.WithPrincipal(r.Context(), p)
+						r = r.WithContext(store.WithLedgerID(ctx, ledgerID))
+					} else {
+						p, err := service.Authenticate(r)
+						if err != nil {
+							status, code := 401, "unauthorized"
+							if !errors.Is(err, auth.ErrUnauthorized) {
+								status, code = 503, "authentication_unavailable"
+							}
+							respond(w, status, map[string]string{"error": code})
+							return
+						}
+						profileRoute := r.URL.Path == "/api/v1/auth/me" || r.URL.Path == "/api/v1/auth/me/avatar" || r.URL.Path == "/api/v1/auth/logout"
+						if p.Nickname == "" && !profileRoute {
+							respond(w, 403, map[string]string{"error": "nickname_required"})
+							return
+						}
+						ledgerID, err := a.store.LedgerForUser(r.Context(), p.ID)
+						if err != nil {
+							slog.Error("ledger resolve", "error", err)
+							respond(w, 500, map[string]string{"error": "internal_error"})
+							return
+						}
+						ctx := auth.WithPrincipal(r.Context(), p)
+						r = r.WithContext(store.WithLedgerID(ctx, ledgerID))
 					}
-					profileRoute := r.URL.Path == "/api/v1/auth/me" || r.URL.Path == "/api/v1/auth/me/avatar" || r.URL.Path == "/api/v1/auth/logout"
-					if p.Nickname == "" && !profileRoute {
-						respond(w, 403, map[string]string{"error": "nickname_required"})
-						return
-					}
-					ledgerID, err := a.store.LedgerForUser(r.Context(), p.ID)
-					if err != nil {
-						slog.Error("ledger resolve", "error", err)
-						respond(w, 500, map[string]string{"error": "internal_error"})
-						return
-					}
-					ctx := auth.WithPrincipal(r.Context(), p)
-					r = r.WithContext(store.WithLedgerID(ctx, ledgerID))
 				}
 			} else {
 				if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Dev-Token")), []byte(a.token)) != 1 {

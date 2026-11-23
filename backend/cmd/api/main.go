@@ -6,6 +6,8 @@ import (
 	"cost/internal/auth"
 	"cost/internal/cache"
 	"cost/internal/store"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 	_ "time/tzdata"
@@ -29,6 +32,8 @@ type config struct {
 	devToken      string
 	appID         string
 	appSecret     string
+	apiKeySHA256  string
+	apiKeyUserID  int64
 	redisAddr     string
 	redisPassword string
 }
@@ -51,8 +56,17 @@ func loadConfig(getenv func(string) string, migrate bool) (config, error) {
 		devToken:      pick("COST_DEV_TOKEN", "cost-local-dev"),
 		appID:         getenv("WECHAT_APP_ID"),
 		appSecret:     getenv("WECHAT_APP_SECRET"),
+		apiKeySHA256:  strings.ToLower(getenv("COST_APIKEY_SHA256")),
+		apiKeyUserID:  1,
 		redisAddr:     getenv("COST_REDIS_ADDR"),
 		redisPassword: getenv("COST_REDIS_PASSWORD"),
+	}
+	if raw := getenv("COST_APIKEY_USER_ID"); raw != "" {
+		id, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || id < 1 {
+			return config{}, errors.New("COST_APIKEY_USER_ID must be a positive integer")
+		}
+		cfg.apiKeyUserID = id
 	}
 	if cfg.env != "development" && cfg.env != "production" {
 		return config{}, fmt.Errorf("COST_ENV must be development or production, got %q", cfg.env)
@@ -93,6 +107,15 @@ func loadConfig(getenv func(string) string, migrate bool) (config, error) {
 		}
 	default:
 		return config{}, fmt.Errorf("unknown COST_AUTH_MODE %q", cfg.authMode)
+	}
+	if cfg.apiKeySHA256 != "" {
+		sum, err := hex.DecodeString(cfg.apiKeySHA256)
+		if err != nil || len(sum) != sha256.Size {
+			return config{}, errors.New("COST_APIKEY_SHA256 must be a 64-character hex SHA-256 digest")
+		}
+		if cfg.authMode != "wechat" {
+			return config{}, errors.New("COST_APIKEY_SHA256 requires COST_AUTH_MODE=wechat")
+		}
 	}
 	return cfg, nil
 }
@@ -143,6 +166,9 @@ func run() error {
 		defer client.Close()
 		options = append(options, api.WithReferenceCache(client))
 	}
+	if cfg.apiKeySHA256 != "" {
+		options = append(options, api.WithReadOnlyKey(cfg.apiKeySHA256, cfg.apiKeyUserID))
+	}
 	var handler http.Handler
 	switch cfg.authMode {
 	case "wechat":
@@ -151,7 +177,7 @@ func run() error {
 		handler = api.New(s, cfg.devToken, options...)
 	}
 	server := &http.Server{Addr: cfg.addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
-	slog.Info("starting cost", "env", cfg.env, "store", cfg.store, "auth_mode", cfg.authMode, "addr", server.Addr, "reference_cache", cfg.redisAddr != "")
+	slog.Info("starting cost", "env", cfg.env, "store", cfg.store, "auth_mode", cfg.authMode, "addr", server.Addr, "reference_cache", cfg.redisAddr != "", "read_only_key", cfg.apiKeySHA256 != "")
 	if cfg.authMode == "development" {
 		slog.Warn("development token authentication: local use only")
 	}

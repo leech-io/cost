@@ -97,6 +97,8 @@ cp backend/.env.example backend/.env
 
 AppSecret 不得提交 Git、写入小程序源码或输出到日志。
 
+生产部署可选 `COST_APIKEY_SHA256`（只读 MCP key 的 SHA-256 摘要）与 `COST_APIKEY_USER_ID`（默认 1）：该 key 仅放行 GET/HEAD，与微信登录并存。生成与启用步骤见[设计说明](docs/superpowers/specs/2026-11-23-readonly-api-key-design.md)。
+
 本机现有配置已保留在 backend/.env。启动脚本自动加载它；直接运行 `go run` 或二进制不会自动加载该文件。MySQL 账户必须有业务表权限，执行迁移时还需具备建表、改表和删除表的权限（005 会重建预算表并 DROP 家庭协作三表）。本机应用账号 `cost_app` 无 DDL 权限，本地迁移用 root 走 socket 执行：
 
 ```sh
