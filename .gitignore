@@ -21,3 +21,6 @@ __pycache__/
 /deploy/backups/
 *.sql.bak
 *.backup.sql
+
+# Docker Desktop local override (development auth, macOS-specific mysql-init).
+/deploy/compose.desktop.yaml

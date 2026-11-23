@@ -34,6 +34,8 @@
 
 ## 运行与验证
 
+- [2026-11-23：只读 API key 验证记录](ops/2026-11-23-readonly-api-key-validation.md)
+
 - [2026-11-22：Cost MCP 验证与接入状态](ops/2026-11-22-readonly-mcp-validation.md)
 
 - [仅测试与文档变更不部署：设计（补录）](superpowers/specs/2026-11-17-check-only-ci-design.md)
@@ -85,6 +87,9 @@
 - [2026-10-22：统一仓库与登录改造验证记录](ops/2026-10-22-monorepo-wechat-auth-validation.md)
 
 ## Superpowers
+
+- [2026-11-23：只读 API key 设计（补录）](superpowers/specs/2026-11-23-readonly-api-key-design.md)
+- [2026-11-23：只读 API key 实施记录（补录）](superpowers/plans/2026-11-23-readonly-api-key.md)
 
 - [2026-11-22：只读 MCP 设计（已确认）](superpowers/specs/2026-11-22-readonly-mcp-design.md)
 - [2026-11-22：只读 MCP 实施计划](superpowers/plans/2026-11-22-readonly-mcp.md)
